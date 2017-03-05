@@ -2,6 +2,8 @@
 import argparse
 import logging
 import sys
+import numpy as np
+from collections import defaultdict
 
 import gym
 from gym import wrappers
@@ -22,10 +24,10 @@ class TabularQAgent(object):
     """
 
     def __init__(self, observation_space, action_space, **userconfig):
-        if not isinstance(observation_space, discrete.Discrete):
-            raise UnsupportedSpace('Observation space {} incompatible with {}. (Only supports Discrete observation spaces.)'.format(observation_space, self))
-        if not isinstance(action_space, discrete.Discrete):
-            raise UnsupportedSpace('Action space {} incompatible with {}. (Only supports Discrete action spaces.)'.format(action_space, self))
+        #if not isinstance(observation_space, discrete.Discrete):
+        #    raise UnsupportedSpace('Observation space {} incompatible with {}. (Only supports Discrete observation spaces.)'.format(observation_space, self))
+        #if not isinstance(action_space, discrete.Discrete):
+        #    raise UnsupportedSpace('Action space {} incompatible with {}. (Only supports Discrete action spaces.)'.format(action_space, self))
         self.observation_space = observation_space
         self.action_space = action_space
         self.action_n = action_space.n
@@ -64,7 +66,7 @@ class TabularQAgent(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('env_id', nargs='?', default='FrozenLake-v0', help='Select the environment to run')
+    parser.add_argument('env_id', nargs='?', default='CartPole-v0', help='Select the environment to run')
     args = parser.parse_args()
 
     # Call `undo_logger_setup` if you want to undo Gym's logger setup
@@ -81,6 +83,7 @@ if __name__ == '__main__':
     # want to change the amount of output.
     logger.setLevel(logging.INFO)
 
+    # h529 : create env
     env = gym.make(args.env_id)
 
     # You provide the directory to write to (can be an existing
@@ -90,19 +93,25 @@ if __name__ == '__main__':
     outdir = './log/03'
     env = wrappers.Monitor(env, directory=outdir, force=True)
     env.seed(0)
-    agent = RandomAgent(env.action_space)
+
+    # h529 : Agnet Setting
+    # agent = RandomAgent(env.action_space)
+    agent = TabularQAgent(env.observation_space ,env.action_space)
+
 
     # h529 : 총 실행되는 epsiod의 수
-    episode_count = 100
+    episode_count = 1000
     reward = 0
     done = False
 
+    # h529 : episode
     for i in range(episode_count):
         ob = env.reset()
         while True:
-            action = agent.act(ob, reward, done)
+            action = agent.act(ob)
             ob, reward, done, _ = env.step(action)
             if done:
+                action.learn(env)
                 break
             # Note there's no env.render() here. But the environment still can open window and
             # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
