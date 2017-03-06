@@ -1,4 +1,5 @@
 # https://github.com/openai/gym/blob/master/examples/agents/random_agent.py
+# https://github.com/hunkim/ReinforcementZeroToAll/blob/master/05_q_table_frozenlake.py
 import argparse
 import logging
 import sys
@@ -52,7 +53,7 @@ if __name__ == '__main__':
     agent = TabularQAgent(env.observation_space, env.action_space)
 
     # h529 : 총 실행되는 epsiod의 수
-    episode_count = 10000
+    episode_count = 5000
     reward = 0
     done = False
 
@@ -64,7 +65,9 @@ if __name__ == '__main__':
         while not done:
             action = np.argmax(agent.Q[ob, :] + np.random.randn(1, env.action_space.n) / (i + 1))
             ob2, reward, done, _ = env.step(action)
-            agent.Q[ob, action] = reward + agent.dis * np.max(agent.Q[ob2, :])
+            # agent.Q[ob, action] = reward + agent.dis * np.max(agent.Q[ob2, :])
+            agent.Q[ob, action] = (1 - agent.learning_rate) * agent.Q[ob, action] \
+                + agent.learning_rate * (reward + agent.dis * np.max(agent.Q[ob2, :]))
             ob = ob2
             rAll += reward
         rList.append(rAll)
