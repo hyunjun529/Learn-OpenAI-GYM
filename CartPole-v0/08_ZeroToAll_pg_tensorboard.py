@@ -9,6 +9,9 @@ import gym
 
 env = gym.make('CartPole-v0')
 
+# h529 ???
+env._max_episode_steps = 10004
+
 hidden_layer_neurons = 24
 learning_rate = 1e-2
 
