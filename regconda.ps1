@@ -1,5 +1,5 @@
 # origin : https://github.com/conda/conda/issues/626#issuecomment-277457230
-$CondaPath = "$env:C:\Anaconda3"
+$CondaPath = "$env:C:\Users\hyunjun529\Anaconda3"
 
 function Register-Conda {
     Param (
