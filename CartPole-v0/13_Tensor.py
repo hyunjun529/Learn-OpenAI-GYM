@@ -5,8 +5,8 @@ import gym
 
 # Gym
 env = gym.make('CartPole-v0')
-env._max_episode_steps = 501
-max_episodes = 2000
+env._max_episode_steps = 200
+max_episodes = 3000
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.n
 
@@ -84,6 +84,9 @@ for episode in range(max_episodes):
         cnt_step += reward
         ary_reward = np.vstack([ary_reward, reward])
 
+        if cnt_step >= 200:
+            break
+
     discounted_rewards = discount_rewards(ary_reward)
 
     ll, la, l, _ = sess.run(
@@ -93,9 +96,6 @@ for episode in range(max_episodes):
     # print(l)
     # print(la)
     print(episode, " : ", cnt_step, " : ", l)
-
-    if cnt_step > 500:
-        break
 
 
 # result
