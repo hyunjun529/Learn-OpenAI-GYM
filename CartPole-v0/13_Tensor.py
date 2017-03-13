@@ -1,12 +1,27 @@
+import logging
 import numpy as np
+import sys
+
 import tensorflow as tf
+
 import gym
+from gym import wrappers
+
+
+# logging
+gym.undo_logger_setup()
+logger = logging.getLogger()
+formatter = logging.Formatter('[%(asctime)s] %(message)s')
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 # Gym
 env = gym.make('CartPole-v0')
 env._max_episode_steps = 200
-max_episodes = 3000
+max_episodes = 2000
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.n
 
@@ -38,6 +53,7 @@ loss = tf.reduce_mean(tf.reduce_sum(log_lik_adv, axis=1))
 train = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 
+# dicount reward function
 def discount_rewards(r, gamma=0.99):
     """Takes 1d float array of rewards and computes discounted reward
     e.g. f([1, 1, 1], 0.99) -> [1, 0.99, 0.9801] -> [1.22 -0.004 -1.22]
@@ -75,7 +91,9 @@ for episode in range(max_episodes):
         action_prob = sess.run(action_pred, feed_dict={X: x})
         action_prob = np.squeeze(action_prob)
         random_noise = np.random.uniform(0, 1, num_action)
-        action = np.argmax(action_prob + random_noise)
+        if np.random.rand(1) < (1 - episode / max_episodes):
+            action_prob = action_prob + random_noise
+        action = np.argmax(action_prob)
 
         y = np.eye(num_action)[action:action + 1]
         ary_action = np.vstack([ary_action, y])
@@ -85,7 +103,7 @@ for episode in range(max_episodes):
         ary_reward = np.vstack([ary_reward, reward])
 
         if cnt_step >= 200:
-            break
+            done = True
 
     discounted_rewards = discount_rewards(ary_reward)
 
@@ -93,12 +111,13 @@ for episode in range(max_episodes):
         [log_lik, log_lik_adv, loss, train],
         feed_dict={X: ary_state, Y: ary_action, advantages: discounted_rewards})
 
-    # print(l)
-    # print(la)
-    print(episode, " : ", cnt_step, " : ", l)
+    logger.info(str(episode) +  "\t: " +  str(int(cnt_step)) +  "\t: " +  str(l))
 
+
+input("Y?")
 
 # result
+'''
 ob = env.reset()
 reward_sum = 0
 while True:
@@ -112,6 +131,6 @@ while True:
     if done:
         print("Total score: {}".format(reward_sum))
         break
-
+'''
 
 env.close()
