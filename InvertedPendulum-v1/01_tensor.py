@@ -25,7 +25,7 @@ outdir = './log/01'
 env = wrappers.Monitor(env, directory=outdir, force=True)
 env.seed(0)
 
-max_episodes = 1500
+max_episodes = 5000
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.shape[0]
 
@@ -34,7 +34,7 @@ num_action = env.action_space.shape[0]
 # https://www.tensorflow.org/get_started/mnist/pros
 #https://github.com/hunkim/ReinforcementZeroToAll/blob/master/08_2_softmax_pg_cartpole.py
 hidden_layer = 10
-learning_rate = 1e-2
+learning_rate = 1e-4
 gamma = .99
 
 X = tf.placeholder(tf.float32, [None, num_observation], name="input_x")
@@ -45,14 +45,13 @@ layer1 = tf.nn.relu(tf.matmul(X, W1))
 
 W2 = tf.get_variable("W2", shape=[hidden_layer, num_action],
                      initializer=tf.contrib.layers.xavier_initializer())
-action_pred = tf.nn.softmax(tf.matmul(layer1, W2))
+action_pred = tf.nn.sigmoid(tf.matmul(layer1, W2))
 
 Y = tf.placeholder(tf.float32, [None, num_action], name="input_y")
 advantages = tf.placeholder(tf.float32, name="reward_signal")
 
-log_lik = -Y * tf.log(action_pred)
-log_lik_adv = log_lik * advantages
-loss = tf.reduce_mean(tf.reduce_sum(log_lik_adv, axis=1))
+log_lik = -Y*tf.log(action_pred) - (1 - Y)*tf.log(1 - action_pred)    # using logistic regression cost function
+loss = tf.reduce_sum(log_lik * advantages)
 
 train = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
@@ -87,16 +86,18 @@ for episode in range(max_episodes):
     ob = env.reset()
 
     while not done:
-        #env.render()
+        # env.render()
 
         x = np.reshape(ob, [1, num_observation])
         ary_state = np.vstack([ary_state, x])
 
         action_prob = sess.run(action_pred, feed_dict={X: x})
         action_prob = np.squeeze(action_prob)
+        '''
         random_noise = np.random.uniform(0, 1, num_action)
         if np.random.rand(1) < (1 - episode / max_episodes):
             action_prob = action_prob + random_noise
+        '''
         action = np.argmax(action_prob)
 
         y = np.eye(num_action)[action:action + 1]
@@ -106,14 +107,18 @@ for episode in range(max_episodes):
         cnt_step += reward
         ary_reward = np.vstack([ary_reward, reward])
 
+        '''
         if cnt_step >= 1000:
             done = True
+        '''
 
     discounted_rewards = discount_rewards(ary_reward)
 
-    ll, la, l, _ = sess.run(
-        [log_lik, log_lik_adv, loss, train],
-        feed_dict={X: ary_state, Y: ary_action, advantages: discounted_rewards})
+    if episode % 20 == 0:
+        l, _ = sess.run(
+            [loss, train],
+            feed_dict={X: ary_state, Y: ary_action, advantages: discounted_rewards})
+        logger.info("========LEARN=========")
 
     logger.info(str(episode) +  "\t: " +  str(int(cnt_step)) +  "\t: " +  str(l))
 
