@@ -29,13 +29,13 @@ max_episodes = 50000
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.shape[0]
 
-batch_size = 10
+batch_size = 50
 
 # TensorFlow
 # https://www.tensorflow.org/get_started/mnist/pros
 #https://github.com/hunkim/ReinforcementZeroToAll/blob/master/08_2_softmax_pg_cartpole.py
 hidden_layer = 10
-learning_rate = 1e-4
+learning_rate = 1e-5
 gamma = .99
 
 X = tf.placeholder(tf.float32, [None, num_observation], name="input_x")
