@@ -25,10 +25,11 @@ outdir = './log/01'
 env = wrappers.Monitor(env, directory=outdir, force=True)
 env.seed(0)
 
-max_episodes = 5000
+max_episodes = 50000
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.shape[0]
 
+batch_size = 10
 
 # TensorFlow
 # https://www.tensorflow.org/get_started/mnist/pros
@@ -57,11 +58,11 @@ train = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 
 # dicount reward function
-def discount_rewards(r, gamma=0.99):
+def discount_rewards(rewards, gamma=0.99):
     """Takes 1d float array of rewards and computes discounted reward
     e.g. f([1, 1, 1], 0.99) -> [1, 0.99, 0.9801] -> [1.22 -0.004 -1.22]
     """
-    d_rewards = np.array([val * (gamma ** i) for i, val in enumerate(r)])
+    d_rewards = np.array([val * (gamma ** i) for i, val in enumerate(rewards)])
 
     # Normalize/standardize rewards
     d_rewards -= d_rewards.mean()
@@ -75,15 +76,17 @@ sess.run(tf.global_variables_initializer())
 
 
 # run Gym
+ary_state = np.empty(0).reshape(0, num_observation)
+ary_action = np.empty(0).reshape(0, num_action)
+ary_reward = np.empty(0).reshape(0, 1)
+batch_reward = np.empty(0).reshape(0, 1)
 for episode in range(max_episodes):
-
-    ary_state = np.empty(0).reshape(0, num_observation)
-    ary_action = np.empty(0).reshape(0, num_action)
-    ary_reward = np.empty(0).reshape(0, 1)
 
     done = False
     cnt_step = 0
     ob = env.reset()
+
+    ary_reward = np.empty(0).reshape(0, 1)
 
     while not done:
         # env.render()
@@ -93,11 +96,11 @@ for episode in range(max_episodes):
 
         action_prob = sess.run(action_pred, feed_dict={X: x})
         action_prob = np.squeeze(action_prob)
-        '''
+
         random_noise = np.random.uniform(0, 1, num_action)
         if np.random.rand(1) < (1 - episode / max_episodes):
             action_prob = action_prob + random_noise
-        '''
+
         action = np.argmax(action_prob)
 
         y = np.eye(num_action)[action:action + 1]
@@ -113,12 +116,19 @@ for episode in range(max_episodes):
         '''
 
     discounted_rewards = discount_rewards(ary_reward)
+    batch_reward = np.vstack([batch_reward, discounted_rewards])
 
-    if episode % 20 == 0:
+    if episode % batch_size == 0:
         l, _ = sess.run(
             [loss, train],
-            feed_dict={X: ary_state, Y: ary_action, advantages: discounted_rewards})
+            feed_dict={X: ary_state, Y: ary_action, advantages: batch_reward})
+
         logger.info("========LEARN=========")
+
+        ary_state = np.empty(0).reshape(0, num_observation)
+        ary_action = np.empty(0).reshape(0, num_action)
+        ary_reward = np.empty(0).reshape(0, 1)
+        batch_reward = np.empty(0).reshape(0, 1)
 
     logger.info(str(episode) +  "\t: " +  str(int(cnt_step)) +  "\t: " +  str(l))
 
