@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='req.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\treq.proto\"0\n\x03req\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0c\n\x04page\x18\x02 \x01(\x05\x12\x0c\n\x04rate\x18\x03 \x01(\x02\x62\x06proto3')
+  serialized_pb=_b('\n\treq.proto\">\n\x03req\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0c\n\x04page\x18\x02 \x01(\x05\x12\x0c\n\x04rate\x18\x03 \x01(\x02\x12\x0c\n\x04\x63\x61te\x18\x04 \x01(\x05\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -54,6 +54,13 @@ _REQ = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='cate', full_name='req.cate', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -67,7 +74,7 @@ _REQ = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=13,
-  serialized_end=61,
+  serialized_end=75,
 )
 
 DESCRIPTOR.message_types_by_name['req'] = _REQ
