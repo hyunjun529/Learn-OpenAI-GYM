@@ -2,14 +2,14 @@ import numpy as np
 import tensorflow as tf
 import gym
 
-import time
 
 # Gym
 env = gym.make('CartPole-v0')
-env._max_episode_steps = 501
-max_episodes = 1500
+# env._max_episode_steps = 501
+max_episodes = 5000
 num_observation = env.observation_space.shape[0]
-num_actions = env.action_space.n
+num_action = env.action_space.n
+
 
 # TensorFlow
 # https://www.tensorflow.org/get_started/mnist/pros
@@ -23,10 +23,10 @@ X = tf.placeholder(tf.float32, [None, num_observation], name="input_x")
 W1 = tf.Variable(tf.zeros([num_observation, hidden_layer]), name="W1")
 layer1 = tf.nn.relu(tf.matmul(X, W1))
 
-W2 = tf.Variable(tf.zeros([hidden_layer, num_actions]), name="W2")
+W2 = tf.Variable(tf.zeros([hidden_layer, num_action]), name="W2")
 action_pred = tf.nn.softmax(tf.matmul(layer1, W2))
 
-Y = tf.placeholder(tf.float32, [None, num_actions], name="input_y")
+Y = tf.placeholder(tf.float32, [None, num_action], name="input_y")
 advantages = tf.placeholder(tf.float32, name="reward_signal")
 
 log_lik = -Y * tf.log(action_pred)
@@ -36,45 +36,60 @@ loss = tf.reduce_mean(tf.reduce_sum(log_lik_adv, axis=1))
 train = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 
+def discount_rewards(r, gamma=0.99):
+    """Takes 1d float array of rewards and computes discounted reward
+    e.g. f([1, 1, 1], 0.99) -> [1, 0.99, 0.9801] -> [1.22 -0.004 -1.22]
+    """
+    d_rewards = np.array([val * (gamma ** i) for i, val in enumerate(r)])
+
+    # Normalize/standardize rewards
+    d_rewards -= d_rewards.mean()
+    d_rewards /= d_rewards.std()
+    return d_rewards
+
+
 # run TensorFlow and TensorBoard
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
+
 # run Gym
 for episode in range(max_episodes):
 
-    ary_state = []
-    ary_action = []
-    ary_reward = []
+    ary_state = np.empty(0).reshape(0, num_observation)
+    ary_action = np.empty(0).reshape(0, num_action)
+    ary_reward = np.empty(0).reshape(0, 1)
 
     done = False
     cnt_step = 0
     ob = env.reset()
-    
+
     while not done:
         # env.render()
 
-        # take a random action
-        action = env.action_space.sample()
+        x = np.reshape(ob, [1, num_observation])
+        ary_state = np.vstack([ary_state, x])
 
-        ob_next, reward, done, _ = env.step(action)
-        if done:  # big penalty
-            reward = -100.0
+        action_prob = sess.run(action_pred, feed_dict={X: x})
+        action_prob = np.squeeze(action_prob)
+        # random_noise = np.random.uniform(0, 1, num_action)
+        action = np.argmax(action_prob)
 
-        cnt_step += 1
-        ary_state.append(ob.tolist())
-        ary_reward.append(reward)
-        ary_action.append(action)
+        y = np.eye(num_action)[action:action + 1]
+        ary_action = np.vstack([ary_action, y])
 
-        ob = ob_next
+        ob, reward, done, _ = env.step(action)
+        cnt_step += reward
+        ary_reward = np.vstack([ary_reward, reward])
 
-    # episode done
-    print("========================================================")
-    print("episode {}, cnt_step = {} : ".format(episode, cnt_step))
-    for i in range(cnt_step):
-        print(ary_state[i], ", ", ary_action[i], ", ", ary_reward[i])
-    print("========================================================")
+    discounted_rewards = discount_rewards(ary_reward)
 
-    env.reset()
+    ll, la, l, _ = sess.run(
+        [log_lik, log_lik_adv, loss, train],
+        feed_dict={X: ary_state, Y: ary_action, advantages: discounted_rewards})
+
+    print(l)
+    print(la)
+    print(episode, " : ", cnt_step)
 
 env.close()
