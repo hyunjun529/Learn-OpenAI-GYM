@@ -5,8 +5,8 @@ import gym
 
 # Gym
 env = gym.make('CartPole-v0')
-# env._max_episode_steps = 501
-max_episodes = 5000
+env._max_episode_steps = 501
+max_episodes = 2000
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.n
 
@@ -20,10 +20,12 @@ gamma = .99
 
 X = tf.placeholder(tf.float32, [None, num_observation], name="input_x")
 
-W1 = tf.Variable(tf.zeros([num_observation, hidden_layer]), name="W1")
+W1 = tf.get_variable("W1", shape=[num_observation, hidden_layer],
+                     initializer=tf.contrib.layers.xavier_initializer())
 layer1 = tf.nn.relu(tf.matmul(X, W1))
 
-W2 = tf.Variable(tf.zeros([hidden_layer, num_action]), name="W2")
+W2 = tf.get_variable("W2", shape=[hidden_layer, num_action],
+                     initializer=tf.contrib.layers.xavier_initializer())
 action_pred = tf.nn.softmax(tf.matmul(layer1, W2))
 
 Y = tf.placeholder(tf.float32, [None, num_action], name="input_y")
@@ -72,8 +74,8 @@ for episode in range(max_episodes):
 
         action_prob = sess.run(action_pred, feed_dict={X: x})
         action_prob = np.squeeze(action_prob)
-        # random_noise = np.random.uniform(0, 1, num_action)
-        action = np.argmax(action_prob)
+        random_noise = np.random.uniform(0, 1, num_action)
+        action = np.argmax(action_prob + random_noise)
 
         y = np.eye(num_action)[action:action + 1]
         ary_action = np.vstack([ary_action, y])
@@ -88,8 +90,28 @@ for episode in range(max_episodes):
         [log_lik, log_lik_adv, loss, train],
         feed_dict={X: ary_state, Y: ary_action, advantages: discounted_rewards})
 
-    print(l)
-    print(la)
-    print(episode, " : ", cnt_step)
+    # print(l)
+    # print(la)
+    print(episode, " : ", cnt_step, " : ", l)
+
+    if cnt_step > 500:
+        break
+
+
+# result
+ob = env.reset()
+reward_sum = 0
+while True:
+    env.render()
+
+    x = np.reshape(ob, [1, num_observation])
+    action_prob = sess.run(action_pred, feed_dict={X: x})
+    action = np.argmax(action_prob)
+    ob, reward, done, _ = env.step(action)
+    reward_sum += reward
+    if done:
+        print("Total score: {}".format(reward_sum))
+        break
+
 
 env.close()
