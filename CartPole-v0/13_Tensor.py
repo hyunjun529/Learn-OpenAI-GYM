@@ -21,7 +21,12 @@ logger.setLevel(logging.INFO)
 # Gym
 env = gym.make('CartPole-v0')
 env._max_episode_steps = 200
-max_episodes = 2000
+
+outdir = './log/13'
+env = wrappers.Monitor(env, directory=outdir, force=True)
+env.seed(0)
+
+max_episodes = 1500
 num_observation = env.observation_space.shape[0]
 num_action = env.action_space.n
 
@@ -134,3 +139,4 @@ while True:
 '''
 
 env.close()
+gym.upload(outdir)
