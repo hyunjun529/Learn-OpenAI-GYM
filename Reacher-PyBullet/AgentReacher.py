@@ -11,6 +11,9 @@ class Reacher:
         self.kp = 1
         self.kd = .1
         self.maxForce = 200
+        target_x = np.random.rand() * 0.6 - 0.4
+        target_y = np.random.rand() * 0.6 - 0.2
+        p.resetBasePositionAndOrientation(7, [target_x, target_y, .01], [0.0, 0.0, 0.0, 1.0])
 
     def action(self, a):
         p.setJointMotorControl2(
@@ -44,13 +47,30 @@ class Reacher:
     def reward_ctrl(self, a):
         return - np.square(a).sum()
 
+    def observation(self):
+        # w
+
+        joint0_vel = p.getJointState(6,0)[1]
+        joint1_vel = p.getJointState(6,2)[1]
+        vels = [joint0_vel, joint1_vel]
+
+        target_pos = np.array(p.getLinkState(7, 2)[0])
+        finger_pos = np.array(p.getLinkState(6, 4)[0])
+
+        return np.concatenate([
+            vels,
+            target_pos[:2],
+            finger_pos - target_pos,
+        ])
+
+
     def step(self, a):
         self.action(a)
         p.stepSimulation()
         rd = self.reward_dist()
         rc = self.reward_ctrl(a)
         reward = rd + rc
-        ob = np.array(11)
+        ob = self.observation()
         done = False
         return ob, reward, done, dict(reward_dist=rd, reward_ctrl=rc)
 
