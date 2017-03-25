@@ -4,12 +4,13 @@ import time
 
 from AgentReacher import Reacher
 
-timeStep = 0.01
+timeStep = 0.016
 
 c = p.connect(p.GUI)
 p.resetSimulation()
 p.setTimeStep(timeStep)
 p.setGravity(0,0,-9.8)
+p.setRealTimeSimulation(1)
 
 reacher = Reacher()
 
