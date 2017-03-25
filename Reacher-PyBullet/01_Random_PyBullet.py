@@ -17,10 +17,13 @@ p.setGravity(0,0,-9.8)
 
 reacher = Reacher()
 
+# startStateLogging/stopStateLogging
+# STATE_LOGGING_VIDEO_MP4
+
 while True:
-    for i in range(200):
-        reacher.action(np.random.rand(2) * 200 - 100)
-        print(reacher.reward_dist())
-        reacher.step()
+    for i in range(50):
+        action = np.random.rand(2) * 2 - 1
+        obs, reward, done, info = reacher.step(action)
+        print(reacher.reward_dist(), ", ", reacher.reward_ctrl(action), " : ", reward)
         time.sleep(timeStep)
     reacher.reset()
