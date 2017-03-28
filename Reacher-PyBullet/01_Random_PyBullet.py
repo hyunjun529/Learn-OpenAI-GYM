@@ -4,6 +4,9 @@ import time
 
 from AgentReacher import Reacher
 
+np.set_printoptions(suppress=True)
+np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
+
 timeStep = 0.016
 
 c = p.connect(p.GUI)

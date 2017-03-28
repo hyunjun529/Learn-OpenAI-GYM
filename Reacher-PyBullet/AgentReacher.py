@@ -5,6 +5,7 @@ class Reacher:
     def __init__(self):
         self.reset()
 
+
     def reset(self):
         p.resetSimulation()
         self.reacher = p.loadMJCF("Reacher.xml")
@@ -14,6 +15,7 @@ class Reacher:
         target_x = np.random.rand() * 0.6 - 0.4
         target_y = np.random.rand() * 0.6 - 0.2
         p.resetBasePositionAndOrientation(7, [target_x, target_y, .01], [0.0, 0.0, 0.0, 1.0])
+
 
     def action(self, a):
         p.setJointMotorControl2(
@@ -36,19 +38,22 @@ class Reacher:
             )
 
 
-    def state(self):
-        print("not yet")
-
     def reward_dist(self):
         finger = np.array(p.getLinkState(6, 4)[4])
         target = np.array(p.getLinkState(7, 2)[4])
         return - np.linalg.norm(finger - target)
 
+
     def reward_ctrl(self, a):
         return - np.square(a).sum()
 
+
     def observation(self):
-        # w
+        joint0_quternion_w = p.getLinkState(6, 0)[1][3]
+        joint1_quternion_w = p.getLinkState(6, 2)[1][3]
+
+        joint_cos = [np.cos(joint0_quternion_w), np.cos(joint1_quternion_w)]
+        joint_sin = [np.sin(joint0_quternion_w), np.sin(joint1_quternion_w)]
 
         joint0_vel = p.getJointState(6,0)[1]
         joint1_vel = p.getJointState(6,2)[1]
@@ -58,8 +63,10 @@ class Reacher:
         finger_pos = np.array(p.getLinkState(6, 4)[0])
 
         return np.concatenate([
+            joint_cos,
+            joint_sin,
+            target_pos[:2] * 3.35,
             vels,
-            target_pos[:2],
             finger_pos - target_pos,
         ])
 
@@ -73,6 +80,7 @@ class Reacher:
         ob = self.observation()
         done = False
         return ob, reward, done, dict(reward_dist=rd, reward_ctrl=rc)
+
 
 '''
 
