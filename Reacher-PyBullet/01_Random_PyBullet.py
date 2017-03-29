@@ -17,7 +17,6 @@ p.setRealTimeSimulation(1)
 
 reacher = Reacher()
 
-#ex
 while True:
     for i in range(50):
         action = np.random.rand(2) * 2 - 1
