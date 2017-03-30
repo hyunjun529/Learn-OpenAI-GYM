@@ -1,21 +1,28 @@
 import gym
 from gym import wrappers
+import ddpg
+import tensorflow as tf
 
-env = gym.make('CartPole-v1')
+
+env = gym.make('Pendulum-v0')
 env.reset()
 env.render()
 
 outdir = './log/'
-
 f_act = open(outdir + 'log_act.txt', 'w')
 f_obs = open(outdir + 'log_obs.txt', 'w')
 f_rwd = open(outdir + 'log_rwd.txt', 'w')
 f_info = open(outdir + 'log_info.txt', 'w')
 
 env = wrappers.Monitor(env, directory=outdir, force=True)
+
+num_observation = env.observation_space.shape[0]
+num_action = env.action_space.shape[0]
+
 for i_episode in range(101):
     observation = env.reset()
-    for t in range(100):
+
+    for t in range(10000):
         env.render()
 
         # action selection
